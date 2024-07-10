@@ -7,72 +7,34 @@ from rest_framework import generics, permissions
 from rest_framework.response import Response
 from rest_framework.views import APIView
 from rest_framework_simplejwt.tokens import RefreshToken
-
 from .serializers import UserSerializer
 from .models import Movie,User
 from .serializers import MovieSerializer
-from rest_framework import generics
 from .models import Review
 from .serializers import ReviewSerializer
-from rest_framework import generics, permissions
+from rest_framework import generics, permissions,filters
 from .recommendations import get_recommendations
 from rest_framework.permissions import AllowAny
+from rest_framework.pagination import PageNumberPagination
 
+from django_filters.rest_framework import DjangoFilterBackend
 
-
-# class RegisterView(generics.CreateAPIView):
-#     queryset = User.objects.all()
-#     serializer_class = UserSerializer
-
-# class LoginView(APIView):
-#     def post(self, request, *args, **kwargs):
-#         email = request.data.get('email')
-#         password = request.data.get('password')
-#         user = authenticate(request, email=email, password=password)
-#         if user is not None:
-#             refresh = RefreshToken.for_user(user)
-#             return Response({
-#                 'refresh': str(refresh),
-#                 'access': str(refresh.access_token),
-#             })
-#         return Response({'error': 'Invalid Credentials'}, status=400)
-
-class RegisterView(generics.CreateAPIView):
+# ---------------------------registration class-----------------
+class Register(generics.CreateAPIView):
     queryset = User.objects.all()
     serializer_class = UserSerializer
     permission_classes = [AllowAny]
 
-# class LoginView(APIView):
-#     def post(self, request, *args, **kwargs):
-#         email = request.data.get('email')
-#         password = request.data.get('password')
-        
-#         # Check if the user exists
-#         try:
-#             user = User.objects.get(email=email)
-#         except User.DoesNotExist:
-#             return Response({'error': 'Invalid email'}, status=400)
-        
-#         # Authenticate the user
-#         user = authenticate(request, email=email, password=password)
-        
-#         if user is not None:
-#             refresh = RefreshToken.for_user(user)
-#             return Response({
-#                 'refresh': str(refresh),
-#                 'access': str(refresh.access_token),
-#             })
-#         else:
-#             return Response({'error': 'Invalid Credentials'}, status=400)
 
-class LoginView(APIView):
-    permission_classes = [AllowAny]  # Allow unauthenticated access
+#----------------------Login class---------------------------------
+class Login(APIView):
+    permission_classes = [AllowAny]  # ----------Allow unauthenticated access----------------
 
     def post(self, request, *args, **kwargs):
         email = request.data.get('email')
         password = request.data.get('password')
         
-        # Authenticate the user
+        # ----------------Authenticate the user--------------------
         user = authenticate(request, email=email, password=password)
         
         if user is not None:
@@ -85,24 +47,38 @@ class LoginView(APIView):
             return Response({'error': 'Invalid Credentials'}, status=400)
 
 
-class MovieListView(generics.ListCreateAPIView):
+
+#-----------------------ovie create and list-------------------------------
+class MovieList(generics.ListCreateAPIView):
     queryset = Movie.objects.all()
     serializer_class = MovieSerializer
+    filter_backends = [DjangoFilterBackend, filters.SearchFilter, filters.OrderingFilter]
+    filterset_fields = ['genre', 'release_date']
+    search_fields = ['title', 'description']
+    ordering_fields = ['release_date', 'title']
+    pagination_class = PageNumberPagination
 
-class MovieDetailView(generics.RetrieveUpdateDestroyAPIView):
+#--------------------------movie update and delete------------------------------------
+class MovieDetail(generics.RetrieveUpdateDestroyAPIView):
     queryset = Movie.objects.all()
     serializer_class = MovieSerializer
-
-
-class ReviewListView(generics.ListCreateAPIView):
+#------------------------------review create and get list-------------------------------------
+class ReviewList(generics.ListCreateAPIView):
     queryset = Review.objects.all()
     serializer_class = ReviewSerializer
     permission_classes = [permissions.IsAuthenticated]
+    filter_backends = [DjangoFilterBackend, filters.SearchFilter, filters.OrderingFilter]
+    filterset_fields = ['movie', 'rating']
+    search_fields = ['comment']
+    ordering_fields = ['rating']
+    pagination_class = PageNumberPagination
 
     def perform_create(self, serializer):
         serializer.save(user=self.request.user)
 
-class ReviewDetailView(generics.RetrieveUpdateDestroyAPIView):
+#----------------------------------review update and dalete class-------------------------
+
+class ReviewDetail(generics.RetrieveUpdateDestroyAPIView):
     queryset = Review.objects.all()
     serializer_class = ReviewSerializer
     permission_classes = [permissions.IsAuthenticated]
@@ -110,7 +86,17 @@ class ReviewDetailView(generics.RetrieveUpdateDestroyAPIView):
     def perform_update(self, serializer):
         serializer.save(user=self.request.user)
 
-class RecommendationView(APIView):
+
+#-------------------- recomendation function---------------------------
+# class Recommendation(APIView):
+#     permission_classes = [permissions.IsAuthenticated]
+
+#     def get(self, request):
+#         recommended_movies = get_recommendations(request.user)
+#         serializer = MovieSerializer(recommended_movies, many=True)
+#         return Response(serializer.data)
+
+class Recommendation(APIView):
     permission_classes = [permissions.IsAuthenticated]
 
     def get(self, request):

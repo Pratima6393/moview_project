@@ -4,9 +4,13 @@ from django.contrib import admin
 from .models import Movie, Review, User 
 class UserAdmin(admin.ModelAdmin):
     list_display = ('id', 'email', 'is_active','is_staff','is_superuser')
-    # search_fields = ('user__phone_number', 'name')
+    
+class MovieAdmin(admin.ModelAdmin):
+    list_display = ('id', 'title', 'description','release_date','genre','poster')
 
-admin.site.register(Movie)
-admin.site.register(Review)   
+class ReviewAdmin(admin.ModelAdmin):
+    list_display = ('id', 'user', 'movie','rating','comment')
+admin.site.register(Movie,MovieAdmin)
+admin.site.register(Review,ReviewAdmin)   
 admin.site.register(User,UserAdmin) 
 
